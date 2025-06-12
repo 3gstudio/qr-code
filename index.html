@@ -4,12 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gerador de QR Code Avançado</title>
-    <link rel="icon" type="image/png" href="/assets/images/favicon-96x96.png" sizes="96x96" />
-    <link rel="icon" type="image/svg+xml" href="/assets/images/favicon.svg" />
-    <link rel="shortcut icon" href="/assets/images/favicon.ico" />
-    <link rel="apple-touch-icon" sizes="180x180" href="/assets/images/apple-touch-icon.png" />
-    <meta name="apple-mobile-web-app-title" content="Gerador de QR Code" />
-    <link rel="manifest" href="/assets/images/site.webmanifest" />
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
     <style>
         * {
@@ -551,13 +545,15 @@
                         level: 'M'
                     });
 
+                    // Armazenar os dados do QR code para uso posterior
                     this.currentQR = {
                         canvas: canvas,
                         text: text,
                         size: size,
                         fgColor: fgColor,
                         bgColor: bgColor,
-                        timestamp: Date.now()
+                        timestamp: Date.now(),
+                        qrious: qr // Armazenar a instância do QRious para acessar os dados da matriz
                     };
 
                     // Atualizar visualização com limitação de tamanho
@@ -618,24 +614,34 @@
                 if (!this.currentQR) return;
 
                 try {
-                    // Criar versão SVG
-                    const size = this.currentQR.size;
-                    const canvas = document.createElement('canvas');
-                    const tempQR = new QRious({
-                        element: canvas,
-                        value: this.currentQR.text,
-                        size: size,
-                        foreground: this.currentQR.fgColor,
-                        background: this.currentQR.bgColor,
-                        level: 'M'
-                    });
+                    // Obter a matriz de dados do QR code
+                    const qrData = this.getQRCodeMatrix();
+                    if (!qrData) {
+                        throw new Error('Não foi possível obter os dados da matriz do QR code');
+                    }
 
-                    // Criar string SVG
-                    const svgContent = `
-                        <svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}">
-                            <image href="${canvas.toDataURL()}" width="${size}" height="${size}"/>
-                        </svg>
-                    `;
+                    const size = this.currentQR.size;
+                    const moduleSize = size / qrData.length;
+                    const fgColor = this.currentQR.fgColor;
+                    
+                    // Criar o conteúdo SVG com retângulos vetoriais para cada módulo
+                    let pathData = '';
+                    
+                    for (let y = 0; y < qrData.length; y++) {
+                        for (let x = 0; x < qrData[y].length; x++) {
+                            if (qrData[y][x]) {
+                                // Adicionar um retângulo para cada módulo ativo (preto)
+                                pathData += `M${x * moduleSize},${y * moduleSize} h${moduleSize} v${moduleSize} h-${moduleSize} z `;
+                            }
+                        }
+                    }
+                    
+                    // Criar o documento SVG completo
+                    const svgContent = `<?xml version="1.0" standalone="no"?>
+                        <svg xmlns="http://www.w3.org/2000/svg" version="1.1" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
+                            <rect width="100%" height="100%" fill="${this.currentQR.bgColor === 'transparent' ? 'none' : this.currentQR.bgColor}"/>
+                            <path d="${pathData}" fill="${fgColor}"/>
+                        </svg>`;
 
                     const blob = new Blob([svgContent], { type: 'image/svg+xml' });
                     const link = document.createElement('a');
@@ -648,6 +654,35 @@
                 } catch (error) {
                     console.error('Erro ao baixar SVG:', error);
                     alert('Erro ao baixar o arquivo SVG');
+                }
+            }
+
+            // Método para extrair a matriz de dados do QR code
+            getQRCodeMatrix() {
+                if (!this.currentQR || !this.currentQR.qrious) return null;
+                
+                try {
+                    // Acessar a matriz de dados do QRious
+                    // Nota: Isso depende da implementação interna do QRious
+                    const qr = this.currentQR.qrious;
+                    
+                    // Extrair os dados da matriz do QR code do canvas
+                    const size = qr._qr.moduleCount;
+                    const matrix = [];
+                    
+                    for (let row = 0; row < size; row++) {
+                        const rowData = [];
+                        for (let col = 0; col < size; col++) {
+                            // isDark retorna true para módulos pretos (ativos)
+                            rowData.push(qr._qr.isDark(row, col));
+                        }
+                        matrix.push(rowData);
+                    }
+                    
+                    return matrix;
+                } catch (error) {
+                    console.error('Erro ao extrair matriz do QR code:', error);
+                    return null;
                 }
             }
 
