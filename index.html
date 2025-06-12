@@ -1,0 +1,689 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gerador de QR Code</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            font-weight: 300;
+        }
+
+        .header h1 img {
+            width: 45px;
+            padding-right: 10px;
+        }
+
+        .content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            padding: 30px;
+        }
+
+        .controls {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .form-group label {
+            font-weight: 600;
+            color: #333;
+            font-size: 14px;
+        }
+
+        .form-group textarea {
+            padding: 12px;
+            border: 2px solid #e1e5e9;
+            border-radius: 10px;
+            font-family: inherit;
+            font-size: 14px;
+            resize: vertical;
+            min-height: 100px;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #4facfe;
+        }
+
+        .form-group input, .form-group select {
+            padding: 12px;
+            border: 2px solid #e1e5e9;
+            border-radius: 10px;
+            font-family: inherit;
+            font-size: 14px;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-group input:focus, .form-group select:focus {
+            outline: none;
+            border-color: #4facfe;
+        }
+
+        .color-input-group {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .color-input-group input[type="color"] {
+            width: 50px;
+            height: 40px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+        .size-controls {
+            display: flex;
+            gap: 10px;
+        }
+
+        .size-controls select, .size-controls input {
+            flex: 1;
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .checkbox-group input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+
+        .character-count {
+            font-size: 12px;
+            color: #666;
+            text-align: right;
+        }
+
+        .character-count.warning {
+            color: #ff6b6b;
+        }
+
+        .preview-section {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            align-items: center;
+        }
+
+        .qr-preview {
+            background: #f8f9fa;
+            border: 2px dashed #dee2e6;
+            border-radius: 15px;
+            padding: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 300px;
+        }
+
+        .qr-preview canvas, .qr-preview svg {
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        .download-buttons {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 14px;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(79, 172, 254, 0.4);
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .history-section {
+            grid-column: 1 / -1;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 2px solid #e1e5e9;
+        }
+
+        .history-title {
+            font-size: 1.5em;
+            margin-bottom: 15px;
+            color: #333;
+        }
+
+        .history-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 15px;
+        }
+
+        .history-item {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 15px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+        }
+
+        .history-item:hover {
+            border-color: #4facfe;
+            transform: translateY(-2px);
+        }
+
+        .history-item canvas {
+            width: 80px;
+            height: 80px;
+            border-radius: 5px;
+        }
+
+        .history-item-text {
+            margin-top: 8px;
+            font-size: 12px;
+            color: #666;
+            word-break: break-all;
+            max-height: 40px;
+            overflow: hidden;
+        }
+
+        .clear-history {
+            margin-top: 15px;
+        }
+
+        @media (max-width: 768px) {
+            .content {
+                grid-template-columns: 1fr;
+                gap: 20px;
+                padding: 20px;
+            }
+
+            .header h1 {
+                font-size: 2em;
+            }
+
+            .download-buttons {
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1><img src="assets/images/bloom.png" class="logo"> Gerador de QR Code</h1>
+            <p>Crie QR codes customizáveis com preview em tempo real</p>
+        </div>
+        
+        <div class="content">
+            <div class="controls">
+                <div class="form-group">
+                    <label for="qr-text">Conteúdo do QR Code</label>
+                    <textarea id="qr-text" placeholder="Digite um texto, URL, ou qualquer conteúdo..."></textarea>
+                    <div class="character-count" id="char-count">0 / 2000 caracteres</div>
+                </div>
+
+                <div class="form-group">
+                    <label>Cor do QR Code</label>
+                    <div class="color-input-group">
+                        <input type="color" id="fg-color" value="#000000">
+                        <input type="text" id="fg-color-text" value="#000000" placeholder="#000000">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Cor de Fundo</label>
+                    <div class="color-input-group">
+                        <input type="color" id="bg-color" value="#ffffff">
+                        <input type="text" id="bg-color-text" value="#ffffff" placeholder="#ffffff">
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="transparent-bg">
+                            <label for="transparent-bg">Transparente</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Tamanho</label>
+                    <div class="size-controls">
+                        <select id="size-preset">
+                            <option value="custom">Tamanho Customizado</option>
+                            <option value="128">Pequeno (128px)</option>
+                            <option value="256" selected>Médio (256px)</option>
+                            <option value="512">Grande (512px)</option>
+                            <option value="1024">Extra Grande (1024px)</option>
+                        </select>
+                        <input type="number" id="custom-size" min="64" max="2048" value="256" placeholder="Tamanho Customizado">
+                    </div>
+                </div>
+
+
+            </div>
+
+            <div class="preview-section">
+                <div class="qr-preview" id="qr-preview">
+                    <p style="color: #666;">Digite algum conteúdo para gerar...</p>
+                </div>
+                
+                <div class="download-buttons">
+                    <button class="btn btn-primary" id="download-png" disabled>
+                        📱 Download PNG
+                    </button>
+                    <button class="btn btn-secondary" id="download-svg" disabled>
+                        🎨 Download SVG
+                    </button>
+                </div>
+            </div>
+
+            <div class="history-section">
+                <h3 class="history-title">📚 QR Codes Recentes</h3>
+                <div class="history-grid" id="history-grid"></div>
+                <button class="btn btn-secondary clear-history" id="clear-history">Apagar Histórico</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class QRCodeGenerator {
+            constructor() {
+                this.currentQR = null;
+                this.history = this.loadHistory();
+                this.initializeElements();
+                this.bindEvents();
+                this.renderHistory();
+            }
+
+            initializeElements() {
+                this.elements = {
+                    text: document.getElementById('qr-text'),
+                    fgColor: document.getElementById('fg-color'),
+                    fgColorText: document.getElementById('fg-color-text'),
+                    bgColor: document.getElementById('bg-color'),
+                    bgColorText: document.getElementById('bg-color-text'),
+                    transparentBg: document.getElementById('transparent-bg'),
+                    sizePreset: document.getElementById('size-preset'),
+                    customSize: document.getElementById('custom-size'),
+                    preview: document.getElementById('qr-preview'),
+                    downloadPng: document.getElementById('download-png'),
+                    downloadSvg: document.getElementById('download-svg'),
+                    charCount: document.getElementById('char-count'),
+                    historyGrid: document.getElementById('history-grid'),
+                    clearHistory: document.getElementById('clear-history')
+                };
+            }
+
+            bindEvents() {
+                // Text input and character count
+                this.elements.text.addEventListener('input', () => {
+                    this.updateCharacterCount();
+                });
+                
+                this.elements.text.addEventListener('blur', () => {
+                    this.generateQR();
+                });
+
+                // Color inputs
+                this.elements.fgColor.addEventListener('input', (e) => {
+                    this.elements.fgColorText.value = e.target.value;
+                    this.generateQR();
+                });
+
+                this.elements.fgColorText.addEventListener('input', (e) => {
+                    if (this.isValidColor(e.target.value)) {
+                        this.elements.fgColor.value = e.target.value;
+                        this.generateQR();
+                    }
+                });
+
+                this.elements.bgColor.addEventListener('input', (e) => {
+                    this.elements.bgColorText.value = e.target.value;
+                    this.generateQR();
+                });
+
+                this.elements.bgColorText.addEventListener('input', (e) => {
+                    if (this.isValidColor(e.target.value)) {
+                        this.elements.bgColor.value = e.target.value;
+                        this.generateQR();
+                    }
+                });
+
+                this.elements.transparentBg.addEventListener('change', () => {
+                    this.generateQR();
+                });
+
+                // Size controls
+                this.elements.sizePreset.addEventListener('change', () => {
+                    if (this.elements.sizePreset.value !== 'custom') {
+                        this.elements.customSize.value = this.elements.sizePreset.value;
+                    }
+                    this.generateQR();
+                });
+
+                this.elements.customSize.addEventListener('input', () => {
+                    this.elements.sizePreset.value = 'custom';
+                    this.generateQR();
+                });
+
+                this.elements.rounded.addEventListener('change', () => {
+                    this.generateQR();
+                });
+                this.elements.rounded.addEventListener('change', () => {
+                    this.generateQR();
+                });
+
+                // Download buttons
+                this.elements.downloadPng.addEventListener('click', () => {
+                    this.downloadPNG();
+                });
+
+                this.elements.downloadSvg.addEventListener('click', () => {
+                    this.downloadSVG();
+                });
+
+                // Clear history
+                this.elements.clearHistory.addEventListener('click', () => {
+                    this.clearHistory();
+                });
+            }
+
+            updateCharacterCount() {
+                const length = this.elements.text.value.length;
+                const maxLength = 2000;
+                this.elements.charCount.textContent = `${length} / ${maxLength} caracteres`;
+                
+                if (length > maxLength * 0.9) {
+                    this.elements.charCount.classList.add('warning');
+                } else {
+                    this.elements.charCount.classList.remove('warning');
+                }
+            }
+
+            isValidColor(color) {
+                return /^#([0-9A-F]{3}){1,2}$/i.test(color);
+            }
+
+            generateQR() {
+                const text = this.elements.text.value.trim();
+                if (!text) {
+                    this.elements.preview.innerHTML = '<p style="color: #666;">Digite alguma coisa para gerar</p>';
+                    this.elements.downloadPng.disabled = true;
+                    this.elements.downloadSvg.disabled = true;
+                    return;
+                }
+
+                const size = parseInt(this.elements.customSize.value) || 256;
+                const fgColor = this.elements.fgColor.value;
+                const bgColor = this.elements.transparentBg.checked ? 'transparent' : this.elements.bgColor.value;
+
+                try {
+                    // Create canvas for QR code
+                    const canvas = document.createElement('canvas');
+                    const qr = new QRious({
+                        element: canvas,
+                        value: text,
+                        size: size,
+                        foreground: fgColor,
+                        background: bgColor,
+                        level: 'M'
+                    });
+
+                    this.currentQR = {
+                        canvas: canvas,
+                        text: text,
+                        size: size,
+                        fgColor: fgColor,
+                        bgColor: bgColor,
+                        timestamp: Date.now()
+                    };
+
+                    // Update preview with size constraints
+                    this.updatePreview(canvas);
+
+                    // Enable download buttons
+                    this.elements.downloadPng.disabled = false;
+                    this.elements.downloadSvg.disabled = false;
+
+                    // Add to history
+                    this.addToHistory(this.currentQR);
+
+                } catch (error) {
+                    console.error('Error generating QR code:', error);
+                    this.elements.preview.innerHTML = '<p style="color: #ff6b6b;">Erro ao gerar o QR code</p>';
+                }
+            }
+
+            updatePreview(canvas) {
+                this.elements.preview.innerHTML = '';
+                
+                // Limit preview size to fit container (max 300px)
+                const maxPreviewSize = 300;
+                const actualSize = canvas.width;
+                
+                if (actualSize > maxPreviewSize) {
+                    canvas.style.width = maxPreviewSize + 'px';
+                    canvas.style.height = maxPreviewSize + 'px';
+                } else {
+                    canvas.style.width = actualSize + 'px';
+                    canvas.style.height = actualSize + 'px';
+                }
+                
+                this.elements.preview.appendChild(canvas);
+            }
+
+
+
+            downloadPNG() {
+                if (!this.currentQR) return;
+
+                const link = document.createElement('a');
+                link.download = `qr-code-${Date.now()}.png`;
+                link.href = this.currentQR.canvas.toDataURL();
+                link.click();
+            }
+
+            downloadSVG() {
+                if (!this.currentQR) return;
+
+                // Create SVG version
+                const size = this.currentQR.size;
+                const qr = new QRious({
+                    value: this.currentQR.text,
+                    size: size,
+                    foreground: this.currentQR.fgColor,
+                    background: this.currentQR.bgColor,
+                    level: 'M'
+                });
+
+                // Convert canvas to SVG (simplified approach)
+                const canvas = document.createElement('canvas');
+                const tempQR = new QRious({
+                    element: canvas,
+                    value: this.currentQR.text,
+                    size: size,
+                    foreground: this.currentQR.fgColor,
+                    background: this.currentQR.bgColor,
+                    level: 'M'
+                });
+
+                // Create SVG string
+                const svgContent = `
+                    <svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}">
+                        <image href="${canvas.toDataURL()}" width="${size}" height="${size}"/>
+                    </svg>
+                `;
+
+                const blob = new Blob([svgContent], { type: 'image/svg+xml' });
+                const link = document.createElement('a');
+                link.download = `qr-code-${Date.now()}.svg`;
+                link.href = URL.createObjectURL(blob);
+                link.click();
+                URL.revokeObjectURL(link.href);
+            }
+
+            addToHistory(qrData) {
+                // Create a small preview canvas
+                const previewCanvas = document.createElement('canvas');
+                const previewSize = 80;
+                const previewQR = new QRious({
+                    element: previewCanvas,
+                    value: qrData.text,
+                    size: previewSize,
+                    foreground: qrData.fgColor,
+                    background: qrData.bgColor,
+                    level: 'M'
+                });
+
+                const historyItem = {
+                    text: qrData.text,
+                    fgColor: qrData.fgColor,
+                    bgColor: qrData.bgColor,
+                    size: qrData.size,
+                    timestamp: qrData.timestamp,
+                    preview: previewCanvas.toDataURL()
+                };
+
+                // Remove duplicates and add to beginning
+                this.history = this.history.filter(item => item.text !== qrData.text);
+                this.history.unshift(historyItem);
+
+                // Keep only last 12 items
+                this.history = this.history.slice(0, 12);
+
+                this.saveHistory();
+                this.renderHistory();
+            }
+
+            renderHistory() {
+                this.elements.historyGrid.innerHTML = '';
+
+                this.history.forEach(item => {
+                    const historyDiv = document.createElement('div');
+                    historyDiv.className = 'history-item';
+                    historyDiv.innerHTML = `
+                        <img src="${item.preview}" alt="QR Code" style="width: 80px; height: 80px; border-radius: 5px;">
+                        <div class="history-item-text">${item.text.substring(0, 30)}${item.text.length > 30 ? '...' : ''}</div>
+                    `;
+
+                    historyDiv.addEventListener('click', () => {
+                        this.loadFromHistory(item);
+                    });
+
+                    this.elements.historyGrid.appendChild(historyDiv);
+                });
+            }
+
+            loadFromHistory(item) {
+                this.elements.text.value = item.text;
+                this.elements.fgColor.value = item.fgColor;
+                this.elements.fgColorText.value = item.fgColor;
+                this.elements.bgColor.value = item.bgColor;
+                this.elements.bgColorText.value = item.bgColor;
+                this.elements.customSize.value = item.size;
+                this.elements.transparentBg.checked = item.bgColor === 'transparent';
+
+                this.updateCharacterCount();
+                this.generateQR();
+            }
+
+            loadHistory() {
+                try {
+                    const saved = JSON.parse(localStorage.getItem('qr-history') || '[]');
+                    return saved;
+                } catch {
+                    return [];
+                }
+            }
+
+            saveHistory() {
+                try {
+                    localStorage.setItem('qr-history', JSON.stringify(this.history));
+                } catch (error) {
+                    console.warn('Could not save history:', error);
+                }
+            }
+
+            clearHistory() {
+                this.history = [];
+                this.saveHistory();
+                this.renderHistory();
+            }
+        }
+
+        // Initialize the QR Code Generator when the page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            new QRCodeGenerator();
+        });
+    </script>
+</body>
+</html>
