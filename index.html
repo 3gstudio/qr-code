@@ -280,6 +280,15 @@
             padding: 20px;
         }
 
+        .version {
+            font-size: 10px;
+            color: #FFF;
+            position: absolute;
+            top: 5px;
+            bottom: 5px;
+            right: 30px;
+        }
+
         @media (max-width: 768px) {
             .content {
                 grid-template-columns: 1fr;
@@ -300,6 +309,7 @@
 <body>
     <div class="container">
         <div class="header">
+            <div class="version"><small>version 0.2</small></div>
             <h1><img src="assets/images/bloom.png" class="logo"> Gerador de QR Code</h1>
             <p>Crie QR codes bonitos e personalizáveis com visualização em tempo real</p>
         </div>
@@ -369,6 +379,7 @@
                 </div>
                 <button class="btn btn-secondary clear-history" id="clear-history">Limpar Histórico</button>
             </div>
+
         </div>
     </div>
 
