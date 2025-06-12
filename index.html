@@ -4,6 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gerador de QR Code Avançado</title>
+    <link rel="icon" type="image/png" href="/assets/images/favicon-96x96.png" sizes="96x96" />Add commentMore actions
+    <link rel="icon" type="image/svg+xml" href="/assets/images/favicon.svg" />
+    <link rel="shortcut icon" href="/assets/images/favicon.ico" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/assets/images/apple-touch-icon.png" />
+    <meta name="apple-mobile-web-app-title" content="Gerador de QR Code" />
+    <link rel="manifest" href="/assets/images/site.webmanifest" />
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
     <style>
         * {
@@ -309,7 +315,7 @@
 <body>
     <div class="container">
         <div class="header">
-            <div class="version"><small>version 0.2</small></div>
+            <div class="version"><small>version 0.3</small></div>
             <h1><img src="assets/images/bloom.png" class="logo"> Gerador de QR Code</h1>
             <p>Crie QR codes bonitos e personalizáveis com visualização em tempo real</p>
         </div>
@@ -379,7 +385,6 @@
                 </div>
                 <button class="btn btn-secondary clear-history" id="clear-history">Limpar Histórico</button>
             </div>
-
         </div>
     </div>
 
@@ -563,8 +568,7 @@
                         size: size,
                         fgColor: fgColor,
                         bgColor: bgColor,
-                        timestamp: Date.now(),
-                        qrious: qr // Armazenar a instância do QRious para acessar os dados da matriz
+                        timestamp: Date.now()
                     };
 
                     // Atualizar visualização com limitação de tamanho
@@ -621,6 +625,96 @@
                 }
             }
 
+            // Método para extrair a matriz de dados do QR code a partir do canvas
+            getQRCodeMatrix() {
+                if (!this.currentQR || !this.currentQR.canvas) return null;
+                
+                try {
+                    const canvas = this.currentQR.canvas;
+                    const ctx = canvas.getContext('2d');
+                    const size = canvas.width;
+                    
+                    // Determinar o tamanho aproximado de cada módulo do QR code
+                    // QR codes geralmente têm entre 21x21 (versão 1) e 177x177 (versão 40) módulos
+                    // Vamos estimar o número de módulos analisando os pixels
+                    
+                    // Primeiro, vamos encontrar a borda do QR code examinando a linha central
+                    const imageData = ctx.getImageData(0, Math.floor(size/2), size, 1).data;
+                    let startPos = 0;
+                    let endPos = size - 1;
+                    
+                    // Encontrar o início do QR code (primeiro pixel preto)
+                    for (let i = 0; i < size; i += 1) {
+                        const idx = i * 4; // cada pixel tem 4 valores (RGBA)
+                        if (imageData[idx] < 128) { // pixel preto (R < 128)
+                            startPos = i;
+                            break;
+                        }
+                    }
+                    
+                    // Encontrar o fim do QR code (último pixel preto)
+                    for (let i = size - 1; i >= 0; i -= 1) {
+                        const idx = i * 4;
+                        if (imageData[idx] < 128) { // pixel preto (R < 128)
+                            endPos = i;
+                            break;
+                        }
+                    }
+                    
+                    const qrSize = endPos - startPos + 1;
+                    
+                    // Estimar o número de módulos
+                    // QR codes têm um número específico de módulos dependendo da versão
+                    // Vamos usar uma abordagem simplificada para estimar
+                    let moduleCount = 0;
+                    
+                    // Contar transições de branco para preto na linha central
+                    let lastPixelBlack = false;
+                    let transitions = 0;
+                    
+                    for (let i = startPos; i <= endPos; i++) {
+                        const idx = i * 4;
+                        const isBlack = imageData[idx] < 128;
+                        
+                        if (isBlack !== lastPixelBlack) {
+                            transitions++;
+                            lastPixelBlack = isBlack;
+                        }
+                    }
+                    
+                    // Estimar o número de módulos com base nas transições
+                    // Cada módulo causa 2 transições (início e fim), exceto possivelmente nas bordas
+                    moduleCount = Math.max(21, Math.ceil(transitions / 2)); // Mínimo de 21 (versão 1 do QR)
+                    
+                    // Agora vamos ler o QR code completo
+                    const fullImageData = ctx.getImageData(0, 0, size, size).data;
+                    const moduleSize = size / moduleCount;
+                    const matrix = [];
+                    
+                    for (let y = 0; y < moduleCount; y++) {
+                        const row = [];
+                        for (let x = 0; x < moduleCount; x++) {
+                            // Pegar o pixel central de cada módulo
+                            const pixelX = Math.floor((x + 0.5) * moduleSize);
+                            const pixelY = Math.floor((y + 0.5) * moduleSize);
+                            
+                            const idx = (pixelY * size + pixelX) * 4;
+                            // Considerar preto se R < 128 (assumindo que o QR é preto e branco)
+                            row.push(fullImageData[idx] < 128);
+                        }
+                        matrix.push(row);
+                    }
+                    
+                    return {
+                        matrix: matrix,
+                        moduleCount: moduleCount
+                    };
+                } catch (error) {
+                    console.error('Erro ao extrair matriz do QR code:', error);
+                    return null;
+                }
+            }
+
             downloadSVG() {
                 if (!this.currentQR) return;
 
@@ -632,15 +726,16 @@
                     }
 
                     const size = this.currentQR.size;
-                    const moduleSize = size / qrData.length;
+                    const moduleSize = size / qrData.moduleCount;
                     const fgColor = this.currentQR.fgColor;
+                    const matrix = qrData.matrix;
                     
                     // Criar o conteúdo SVG com retângulos vetoriais para cada módulo
                     let pathData = '';
                     
-                    for (let y = 0; y < qrData.length; y++) {
-                        for (let x = 0; x < qrData[y].length; x++) {
-                            if (qrData[y][x]) {
+                    for (let y = 0; y < matrix.length; y++) {
+                        for (let x = 0; x < matrix[y].length; x++) {
+                            if (matrix[y][x]) {
                                 // Adicionar um retângulo para cada módulo ativo (preto)
                                 pathData += `M${x * moduleSize},${y * moduleSize} h${moduleSize} v${moduleSize} h-${moduleSize} z `;
                             }
@@ -648,7 +743,7 @@
                     }
                     
                     // Criar o documento SVG completo
-                    const svgContent = `<?xml version="1.0" standalone="no"?>
+                    const svgContent = `<?xml version="1.0" encoding="UTF-8" standalone="no"?>
                         <svg xmlns="http://www.w3.org/2000/svg" version="1.1" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
                             <rect width="100%" height="100%" fill="${this.currentQR.bgColor === 'transparent' ? 'none' : this.currentQR.bgColor}"/>
                             <path d="${pathData}" fill="${fgColor}"/>
@@ -664,36 +759,7 @@
                     URL.revokeObjectURL(link.href);
                 } catch (error) {
                     console.error('Erro ao baixar SVG:', error);
-                    alert('Erro ao baixar o arquivo SVG');
-                }
-            }
-
-            // Método para extrair a matriz de dados do QR code
-            getQRCodeMatrix() {
-                if (!this.currentQR || !this.currentQR.qrious) return null;
-                
-                try {
-                    // Acessar a matriz de dados do QRious
-                    // Nota: Isso depende da implementação interna do QRious
-                    const qr = this.currentQR.qrious;
-                    
-                    // Extrair os dados da matriz do QR code do canvas
-                    const size = qr._qr.moduleCount;
-                    const matrix = [];
-                    
-                    for (let row = 0; row < size; row++) {
-                        const rowData = [];
-                        for (let col = 0; col < size; col++) {
-                            // isDark retorna true para módulos pretos (ativos)
-                            rowData.push(qr._qr.isDark(row, col));
-                        }
-                        matrix.push(rowData);
-                    }
-                    
-                    return matrix;
-                } catch (error) {
-                    console.error('Erro ao extrair matriz do QR code:', error);
-                    return null;
+                    alert('Erro ao baixar o arquivo SVG: ' + error.message);
                 }
             }
 
