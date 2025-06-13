@@ -806,8 +806,8 @@
             }
 
             async createShortUrl() {
-                const apiKey = this.elements.apiKey.value.trim();
-                const wordpressUrl = this.elements.wordpressUrl.value.trim();
+                const apiKey = this.elements.apiKey;
+                const wordpressUrl = this.elements.wordpressUrl;
                 const redirectUrl = this.elements.redirectUrl.value.trim();
 
                 if (!apiKey || !wordpressUrl || !redirectUrl) {
