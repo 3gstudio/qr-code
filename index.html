@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gerador de QR Code Avançado</title>
-    <link rel="icon" type="image/png" href="/assets/images/favicon-96x96.png" sizes="96x96" />Add commentMore actions
+    <link rel="icon" type="image/png" href="/assets/images/favicon-96x96.png" sizes="96x96" />
     <link rel="icon" type="image/svg+xml" href="/assets/images/favicon.svg" />
     <link rel="shortcut icon" href="/assets/images/favicon.ico" />
     <link rel="apple-touch-icon" sizes="180x180" href="/assets/images/apple-touch-icon.png" />
@@ -152,6 +152,129 @@
             color: #ff6b6b;
         }
 
+        /* Dynamic QR Code Styles */
+        .dynamic-section {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border: 2px solid #e1e5e9;
+        }
+
+        .dynamic-section h3 {
+            color: #333;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .dynamic-toggle {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .toggle-switch {
+            position: relative;
+            width: 50px;
+            height: 24px;
+            background: #ccc;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .toggle-switch.active {
+            background: #4facfe;
+        }
+
+        .toggle-switch::after {
+            content: '';
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            background: white;
+            border-radius: 50%;
+            top: 2px;
+            left: 2px;
+            transition: transform 0.3s;
+        }
+
+        .toggle-switch.active::after {
+            transform: translateX(26px);
+        }
+
+        .api-config {
+            display: none;
+            gap: 15px;
+        }
+
+        .api-config.active {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .shortened-url-display {
+            background: #e8f5e8;
+            border: 2px solid #4caf50;
+            border-radius: 8px;
+            padding: 12px;
+            margin-top: 10px;
+            display: none;
+        }
+
+        .shortened-url-display.show {
+            display: block;
+        }
+
+        .shortened-url {
+            font-family: monospace;
+            font-weight: bold;
+            color: #2e7d32;
+            word-break: break-all;
+        }
+
+        .copy-btn {
+            background: #4caf50;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            margin-left: 10px;
+        }
+
+        .copy-btn:hover {
+            background: #45a049;
+        }
+
+        .loading {
+            display: none;
+            color: #666;
+            font-style: italic;
+        }
+
+        .loading.show {
+            display: inline;
+        }
+
+        .error-message {
+            background: #ffebee;
+            border: 2px solid #f44336;
+            border-radius: 8px;
+            padding: 12px;
+            color: #c62828;
+            margin-top: 10px;
+            display: none;
+        }
+
+        .error-message.show {
+            display: block;
+        }
+
         .preview-section {
             display: flex;
             flex-direction: column;
@@ -218,6 +341,16 @@
         .btn-secondary:hover:not(:disabled) {
             transform: translateY(-2px);
             box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #4caf50 0%, #45a049 100%);
+            color: white;
+        }
+
+        .btn-success:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(76, 175, 80, 0.4);
         }
 
         .history-section {
@@ -315,13 +448,44 @@
 <body>
     <div class="container">
         <div class="header">
-            <div class="version"><small>version 0.3</small></div>
+            <div class="version"><small>version 0.4</small></div>
             <h1><img src="assets/images/bloom.png" class="logo"> Gerador de QR Code</h1>
             <p>Crie QR codes bonitos e personalizáveis com visualização em tempo real</p>
         </div>
         
         <div class="content">
             <div class="controls">
+                <!-- Dynamic QR Code Section -->
+                <div class="dynamic-section">
+                    <h3>🔗 QR Code Dinâmico</h3>
+                    <div class="dynamic-toggle">
+                        <div class="toggle-switch" id="dynamic-toggle"></div>
+                        <label>Criar QR Code Dinâmico</label>
+                    </div>
+                    
+                    <div class="api-config" id="api-config">
+                        
+                        <div class="form-group">
+                            <label for="redirect-url">URL de Destino</label>
+                            <input type="url" id="redirect-url" placeholder="https://exemplo.com/destino">
+                        </div>
+                        
+                        <button class="btn btn-success" id="create-short-url">
+                            🔗 Criar Link Encurtado
+                        </button>
+                        
+                        <div class="loading" id="loading">Criando link encurtado...</div>
+                        
+                        <div class="shortened-url-display" id="shortened-url-display">
+                            <strong>Link Encurtado:</strong>
+                            <div class="shortened-url" id="shortened-url"></div>
+                            <button class="copy-btn" id="copy-url">Copiar</button>
+                        </div>
+                        
+                        <div class="error-message" id="error-message"></div>
+                    </div>
+                </div>
+
                 <div class="form-group">
                     <label for="qr-text">Conteúdo do QR Code</label>
                     <textarea id="qr-text" placeholder="Digite texto, URL ou qualquer conteúdo para seu QR code..."></textarea>
@@ -389,18 +553,99 @@
     </div>
 
     <script>
+        class URLShortifyAPI {
+            constructor() {
+                this.baseUrl = '';
+                this.apiKey = '';
+            }
+
+            setConfig(wordpressUrl, apiKey) {
+                this.baseUrl = wordpressUrl.replace(/\/$/, '') + '/wp-json/url-shortify/v1';
+                this.apiKey = apiKey;
+            }
+
+            async createShortLink(originalUrl, title = '') {
+                if (!this.baseUrl || !this.apiKey) {
+                    throw new Error('Configuração da API não definida');
+                }
+
+                const response = await fetch(`${this.baseUrl}/links`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${this.apiKey}`,
+                        'X-WP-Nonce': await this.getNonce()
+                    },
+                    body: JSON.stringify({
+                        url: originalUrl,
+                        title: title || 'QR Code Dynamic Link',
+                        description: 'Link criado pelo Gerador de QR Code',
+                        slug: this.generateSlug()
+                    })
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({}));
+                    throw new Error(errorData.message || `Erro HTTP: ${response.status}`);
+                }
+
+                return await response.json();
+            }
+
+            async getNonce() {
+                // Para WordPress, você pode precisar obter um nonce
+                // Este é um exemplo simplificado
+                try {
+                    const response = await fetch(`${this.baseUrl.replace('/wp-json/url-shortify/v1', '')}/wp-admin/admin-ajax.php?action=get_nonce`);
+                    const data = await response.json();
+                    return data.nonce || '';
+                } catch (error) {
+                    console.warn('Não foi possível obter nonce:', error);
+                    return '';
+                }
+            }
+
+            generateSlug() {
+                return Math.random().toString(36).substring(2, 8);
+            }
+
+            async getShortLinks() {
+                if (!this.baseUrl || !this.apiKey) {
+                    throw new Error('Configuração da API não definida');
+                }
+
+                const response = await fetch(`${this.baseUrl}/links`, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${this.apiKey}`,
+                        'X-WP-Nonce': await this.getNonce()
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Erro ao buscar links: ${response.status}`);
+                }
+
+                return await response.json();
+            }
+        }
+
         class QRCodeGenerator {
             constructor() {
                 this.currentQR = null;
                 this.history = [];
+                this.urlShortify = new URLShortifyAPI();
+                this.isDynamicMode = false;
                 this.initializeElements();
                 this.loadHistory();
+                this.loadAPIConfig();
                 this.bindEvents();
                 this.renderHistory();
             }
 
             initializeElements() {
                 this.elements = {
+                    // Existing elements
                     text: document.getElementById('qr-text'),
                     fgColor: document.getElementById('fg-color'),
                     fgColorText: document.getElementById('fg-color-text'),
@@ -414,7 +659,20 @@
                     downloadSvg: document.getElementById('download-svg'),
                     charCount: document.getElementById('char-count'),
                     historyGrid: document.getElementById('history-grid'),
-                    clearHistory: document.getElementById('clear-history')
+                    clearHistory: document.getElementById('clear-history'),
+                    
+                    // Dynamic QR elements
+                    dynamicToggle: document.getElementById('dynamic-toggle'),
+                    apiConfig: document.getElementById('api-config'),
+                    apiKey: 'ck_3d617163ee41c94090f9a1f6c968581e199b33e0',
+                    wordpressUrl: 'https://3gstudio.com.br',
+                    redirectUrl: document.getElementById('redirect-url'),
+                    createShortUrl: document.getElementById('create-short-url'),
+                    loading: document.getElementById('loading'),
+                    shortenedUrlDisplay: document.getElementById('shortened-url-display'),
+                    shortenedUrl: document.getElementById('shortened-url'),
+                    copyUrl: document.getElementById('copy-url'),
+                    errorMessage: document.getElementById('error-message')
                 };
 
                 // Verificar se todos os elementos foram encontrados
@@ -426,9 +684,8 @@
             }
 
             bindEvents() {
-                // Verificar se os elementos existem antes de adicionar eventos
+                // Existing events
                 if (this.elements.text) {
-                    // Entrada de texto e contador de caracteres
                     this.elements.text.addEventListener('input', () => {
                         this.updateCharacterCount();
                     });
@@ -438,7 +695,7 @@
                     });
                 }
 
-                // Controles de cor
+                // Color controls
                 if (this.elements.fgColor) {
                     this.elements.fgColor.addEventListener('input', (e) => {
                         this.elements.fgColorText.value = e.target.value;
@@ -477,7 +734,7 @@
                     });
                 }
 
-                // Controles de tamanho
+                // Size controls
                 if (this.elements.sizePreset) {
                     this.elements.sizePreset.addEventListener('change', () => {
                         if (this.elements.sizePreset.value !== 'custom') {
@@ -494,7 +751,7 @@
                     });
                 }
 
-                // Botões de download
+                // Download buttons
                 if (this.elements.downloadPng) {
                     this.elements.downloadPng.addEventListener('click', () => {
                         this.downloadPNG();
@@ -507,14 +764,183 @@
                     });
                 }
 
-                // Limpar histórico
+                // Clear history
                 if (this.elements.clearHistory) {
                     this.elements.clearHistory.addEventListener('click', () => {
                         this.clearHistoryData();
                     });
                 }
+
+                // Dynamic QR events
+                if (this.elements.dynamicToggle) {
+                    this.elements.dynamicToggle.addEventListener('click', () => {
+                        this.toggleDynamicMode();
+                    });
+                }
+
+                if (this.elements.createShortUrl) {
+                    this.elements.createShortUrl.addEventListener('click', () => {
+                        this.createShortUrl();
+                    });
+                }
+
+                if (this.elements.copyUrl) {
+                    this.elements.copyUrl.addEventListener('click', () => {
+                        this.copyToClipboard();
+                    });
+                }
+
             }
 
+            toggleDynamicMode() {
+                this.isDynamicMode = !this.isDynamicMode;
+                
+                if (this.isDynamicMode) {
+                    this.elements.dynamicToggle.classList.add('active');
+                    this.elements.apiConfig.classList.add('active');
+                } else {
+                    this.elements.dynamicToggle.classList.remove('active');
+                    this.elements.apiConfig.classList.remove('active');
+                    this.hideMessages();
+                }
+            }
+
+            async createShortUrl() {
+                const apiKey = this.elements.apiKey.value.trim();
+                const wordpressUrl = this.elements.wordpressUrl.value.trim();
+                const redirectUrl = this.elements.redirectUrl.value.trim();
+
+                if (!apiKey || !wordpressUrl || !redirectUrl) {
+                    this.showError('Por favor, preencha todos os campos obrigatórios.');
+                    return;
+                }
+
+                if (!this.isValidUrl(wordpressUrl) || !this.isValidUrl(redirectUrl)) {
+                    this.showError('Por favor, insira URLs válidas.');
+                    return;
+                }
+
+                this.showLoading(true);
+                this.hideMessages();
+
+                try {
+                    this.urlShortify.setConfig(wordpressUrl, apiKey);
+                    const result = await this.urlShortify.createShortLink(redirectUrl);
+                    
+                    if (result && result.short_url) {
+                        this.showShortenedUrl(result.short_url);
+                        this.elements.text.value = result.short_url;
+                        this.generateQR();
+                        this.saveAPIConfig();
+                    } else {
+                        throw new Error('Resposta inválida da API');
+                    }
+                } catch (error) {
+                    console.error('Erro ao criar link encurtado:', error);
+                    this.showError(`Erro ao criar link encurtado: ${error.message}`);
+                } finally {
+                    this.showLoading(false);
+                }
+            }
+
+            showShortenedUrl(url) {
+                this.elements.shortenedUrl.textContent = url;
+                this.elements.shortenedUrlDisplay.classList.add('show');
+            }
+
+            showError(message) {
+                this.elements.errorMessage.textContent = message;
+                this.elements.errorMessage.classList.add('show');
+            }
+
+            showLoading(show) {
+                if (show) {
+                    this.elements.loading.classList.add('show');
+                    this.elements.createShortUrl.disabled = true;
+                } else {
+                    this.elements.loading.classList.remove('show');
+                    this.elements.createShortUrl.disabled = false;
+                }
+            }
+
+            hideMessages() {
+                this.elements.shortenedUrlDisplay.classList.remove('show');
+                this.elements.errorMessage.classList.remove('show');
+            }
+
+            async copyToClipboard() {
+                try {
+                    await navigator.clipboard.writeText(this.elements.shortenedUrl.textContent);
+                    
+                    // Visual feedback
+                    const originalText = this.elements.copyUrl.textContent;
+                    this.elements.copyUrl.textContent = 'Copiado!';
+                    this.elements.copyUrl.style.background = '#4caf50';
+                    
+                    setTimeout(() => {
+                        this.elements.copyUrl.textContent = originalText;
+                        this.elements.copyUrl.style.background = '';
+                    }, 2000);
+                } catch (error) {
+                    console.error('Erro ao copiar:', error);
+                    // Fallback for older browsers
+                    this.fallbackCopyToClipboard(this.elements.shortenedUrl.textContent);
+                }
+            }
+
+            fallbackCopyToClipboard(text) {
+                const textArea = document.createElement('textarea');
+                textArea.value = text;
+                document.body.appendChild(textArea);
+                textArea.focus();
+                textArea.select();
+                
+                try {
+                    document.execCommand('copy');
+                    alert('Link copiado para a área de transferência!');
+                } catch (error) {
+                    console.error('Erro ao copiar:', error);
+                                        alert('Não foi possível copiar automaticamente. Por favor, copie manualmente.');
+                }
+                
+                document.body.removeChild(textArea);
+            }
+
+            isValidUrl(url) {
+                try {
+                    new URL(url);
+                    return true;
+                } catch {
+                    return false;
+                }
+            }
+
+            saveAPIConfig() {
+                try {
+                    const config = {
+                        apiKey: this.elements.apiKey.value,
+                        wordpressUrl: this.elements.wordpressUrl.value
+                    };
+                    localStorage.setItem('url-shortify-config', JSON.stringify(config));
+                } catch (error) {
+                    console.warn('Não foi possível salvar configuração da API:', error);
+                }
+            }
+
+            loadAPIConfig() {
+                try {
+                    const saved = localStorage.getItem('url-shortify-config');
+                    if (saved) {
+                        const config = JSON.parse(saved);
+                        if (this.elements.apiKey) this.elements.apiKey.value = config.apiKey || '';
+                        if (this.elements.wordpressUrl) this.elements.wordpressUrl.value = config.wordpressUrl || '';
+                    }
+                } catch (error) {
+                    console.warn('Erro ao carregar configuração da API:', error);
+                }
+            }
+
+            // Existing methods from the original code
             updateCharacterCount() {
                 if (!this.elements.text || !this.elements.charCount) return;
                 
@@ -550,7 +976,6 @@
                     'transparent' : (this.elements.bgColor ? this.elements.bgColor.value : '#ffffff');
 
                 try {
-                    // Criar canvas para o QR code
                     const canvas = document.createElement('canvas');
                     const qr = new QRious({
                         element: canvas,
@@ -561,7 +986,6 @@
                         level: 'M'
                     });
 
-                    // Armazenar os dados do QR code para uso posterior
                     this.currentQR = {
                         canvas: canvas,
                         text: text,
@@ -571,14 +995,11 @@
                         timestamp: Date.now()
                     };
 
-                    // Atualizar visualização com limitação de tamanho
                     this.updatePreview(canvas);
 
-                    // Habilitar botões de download
                     if (this.elements.downloadPng) this.elements.downloadPng.disabled = false;
                     if (this.elements.downloadSvg) this.elements.downloadSvg.disabled = false;
 
-                    // Adicionar ao histórico
                     this.addToHistory(this.currentQR);
 
                 } catch (error) {
@@ -594,7 +1015,6 @@
 
                 this.elements.preview.innerHTML = '';
                 
-                // Limitar tamanho da visualização para caber no container (máx 300px)
                 const maxPreviewSize = 300;
                 const actualSize = canvas.width;
                 
@@ -625,7 +1045,6 @@
                 }
             }
 
-            // Método para extrair a matriz de dados do QR code a partir do canvas
             getQRCodeMatrix() {
                 if (!this.currentQR || !this.currentQR.canvas) return null;
                 
@@ -634,28 +1053,21 @@
                     const ctx = canvas.getContext('2d');
                     const size = canvas.width;
                     
-                    // Determinar o tamanho aproximado de cada módulo do QR code
-                    // QR codes geralmente têm entre 21x21 (versão 1) e 177x177 (versão 40) módulos
-                    // Vamos estimar o número de módulos analisando os pixels
-                    
-                    // Primeiro, vamos encontrar a borda do QR code examinando a linha central
                     const imageData = ctx.getImageData(0, Math.floor(size/2), size, 1).data;
                     let startPos = 0;
                     let endPos = size - 1;
                     
-                    // Encontrar o início do QR code (primeiro pixel preto)
                     for (let i = 0; i < size; i += 1) {
-                        const idx = i * 4; // cada pixel tem 4 valores (RGBA)
-                        if (imageData[idx] < 128) { // pixel preto (R < 128)
+                        const idx = i * 4;
+                        if (imageData[idx] < 128) {
                             startPos = i;
                             break;
                         }
                     }
                     
-                    // Encontrar o fim do QR code (último pixel preto)
                     for (let i = size - 1; i >= 0; i -= 1) {
                         const idx = i * 4;
-                        if (imageData[idx] < 128) { // pixel preto (R < 128)
+                        if (imageData[idx] < 128) {
                             endPos = i;
                             break;
                         }
@@ -663,12 +1075,6 @@
                     
                     const qrSize = endPos - startPos + 1;
                     
-                    // Estimar o número de módulos
-                    // QR codes têm um número específico de módulos dependendo da versão
-                    // Vamos usar uma abordagem simplificada para estimar
-                    let moduleCount = 0;
-                    
-                    // Contar transições de branco para preto na linha central
                     let lastPixelBlack = false;
                     let transitions = 0;
                     
@@ -682,11 +1088,8 @@
                         }
                     }
                     
-                    // Estimar o número de módulos com base nas transições
-                    // Cada módulo causa 2 transições (início e fim), exceto possivelmente nas bordas
-                    moduleCount = Math.max(21, Math.ceil(transitions / 2)); // Mínimo de 21 (versão 1 do QR)
+                    const moduleCount = Math.max(21, Math.ceil(transitions / 2));
                     
-                    // Agora vamos ler o QR code completo
                     const fullImageData = ctx.getImageData(0, 0, size, size).data;
                     const moduleSize = size / moduleCount;
                     const matrix = [];
@@ -694,12 +1097,10 @@
                     for (let y = 0; y < moduleCount; y++) {
                         const row = [];
                         for (let x = 0; x < moduleCount; x++) {
-                            // Pegar o pixel central de cada módulo
                             const pixelX = Math.floor((x + 0.5) * moduleSize);
                             const pixelY = Math.floor((y + 0.5) * moduleSize);
                             
                             const idx = (pixelY * size + pixelX) * 4;
-                            // Considerar preto se R < 128 (assumindo que o QR é preto e branco)
                             row.push(fullImageData[idx] < 128);
                         }
                         matrix.push(row);
@@ -719,7 +1120,6 @@
                 if (!this.currentQR) return;
 
                 try {
-                    // Obter a matriz de dados do QR code
                     const qrData = this.getQRCodeMatrix();
                     if (!qrData) {
                         throw new Error('Não foi possível obter os dados da matriz do QR code');
@@ -730,19 +1130,16 @@
                     const fgColor = this.currentQR.fgColor;
                     const matrix = qrData.matrix;
                     
-                    // Criar o conteúdo SVG com retângulos vetoriais para cada módulo
                     let pathData = '';
                     
                     for (let y = 0; y < matrix.length; y++) {
                         for (let x = 0; x < matrix[y].length; x++) {
                             if (matrix[y][x]) {
-                                // Adicionar um retângulo para cada módulo ativo (preto)
                                 pathData += `M${x * moduleSize},${y * moduleSize} h${moduleSize} v${moduleSize} h-${moduleSize} z `;
                             }
                         }
                     }
                     
-                    // Criar o documento SVG completo
                     const svgContent = `<?xml version="1.0" encoding="UTF-8" standalone="no"?>
                         <svg xmlns="http://www.w3.org/2000/svg" version="1.1" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
                             <rect width="100%" height="100%" fill="${this.currentQR.bgColor === 'transparent' ? 'none' : this.currentQR.bgColor}"/>
@@ -765,7 +1162,6 @@
 
             addToHistory(qrData) {
                 try {
-                    // Criar canvas pequeno para visualização
                     const previewCanvas = document.createElement('canvas');
                     const previewSize = 80;
                     const previewQR = new QRious({
@@ -786,11 +1182,8 @@
                         preview: previewCanvas.toDataURL()
                     };
 
-                    // Remover duplicatas e adicionar ao início
                     this.history = this.history.filter(item => item.text !== qrData.text);
                     this.history.unshift(historyItem);
-
-                    // Manter apenas os últimos 12 itens
                     this.history = this.history.slice(0, 12);
 
                     this.saveHistory();
@@ -866,7 +1259,7 @@
             }
         }
 
-        // Inicializar o Gerador de QR Code quando a página carregar
+        // Initialize the QR Code Generator when the page loads
         document.addEventListener('DOMContentLoaded', () => {
             try {
                 new QRCodeGenerator();
